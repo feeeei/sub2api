@@ -189,7 +189,7 @@ Sub2API is an AI API gateway platform designed to distribute and manage API quot
 
 ## Magpie Integration
 
-Connect Magpie to the existing gateway APIs using the [Magpie setup guide](docs/MAGPIE.md). It covers endpoint configuration, supported protocols, model discovery, and the pending one-click import feature.
+Connect Magpie to the existing gateway APIs using the [Magpie setup guide](docs/MAGPIE.md). It covers endpoint configuration, supported protocols, model discovery, and one-click import.
 
 ## Ecosystem
 

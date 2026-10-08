@@ -23,6 +23,8 @@ export interface MagpieImportEndpoints {
 export interface MagpieImportLinkInput {
   baseUrl: string
   platform?: GroupPlatform | null
+  claudeCodeOnly?: boolean
+  allowMessagesDispatch?: boolean
   siteName: string
   /** The API key's id on this site: it makes the provider id, so each key is its own provider. */
   keyId: number
@@ -62,12 +64,22 @@ function normalizeRootUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, '').replace(/\/v1$/, '')
 }
 
+/** Match the group restrictions before offering an import. */
+export function canImportToMagpie(
+  platform: GroupPlatform | undefined | null,
+  claudeCodeOnly = false
+): platform is GroupPlatform {
+  return !!platform && platform !== 'typesafe' && !claudeCodeOnly
+}
+
 export function resolveMagpieImportEndpoints(
   platform: GroupPlatform | undefined | null,
-  baseUrl: string
+  baseUrl: string,
+  allowMessagesDispatch = false
 ): MagpieImportEndpoints {
+  if (!canImportToMagpie(platform)) return {}
   const root = normalizeRootUrl(baseUrl)
-  const resolvedPlatform: GroupPlatform = platform || 'anthropic'
+  const resolvedPlatform = platform
 
   switch (resolvedPlatform) {
     case 'antigravity':
@@ -80,8 +92,18 @@ export function resolveMagpieImportEndpoints(
         chat: `${root}/v1`,
         catalog: MAGPIE_CATALOG_BY_PLATFORM.gemini
       }
+    case 'openai':
+    case 'composite':
+      // OpenAI Messages conversion requires group opt-in. Composite routes may
+      // resolve to OpenAI too, so do not promise Messages for every model.
+      return {
+        ...(allowMessagesDispatch ? { anthropic: root } : {}),
+        chat: `${root}/v1`,
+        responses: `${root}/v1`,
+        catalog: MAGPIE_CATALOG_BY_PLATFORM[resolvedPlatform]
+      }
     default:
-      // Every other platform auto-routes all three APIs on the gateway.
+      // Anthropic, Grok and multi-protocol providers expose all three APIs.
       return {
         anthropic: root,
         chat: `${root}/v1`,
@@ -132,8 +154,9 @@ export function resolveMagpieProviderName(siteName: string, keyName: string): st
   return truncateUtf8(key ? `${site}-${key}` : site, MAGPIE_NAME_MAX_BYTES)
 }
 
-export function buildMagpieImportLink(input: MagpieImportLinkInput): string {
-  const endpoints = resolveMagpieImportEndpoints(input.platform, input.baseUrl)
+export function buildMagpieImportLink(input: MagpieImportLinkInput): string | null {
+  if (!canImportToMagpie(input.platform, input.claudeCodeOnly)) return null
+  const endpoints = resolveMagpieImportEndpoints(input.platform, input.baseUrl, input.allowMessagesDispatch)
   const params = new URLSearchParams()
 
   params.set('name', resolveMagpieProviderName(input.siteName, input.keyName))

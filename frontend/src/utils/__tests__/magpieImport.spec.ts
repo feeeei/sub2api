@@ -10,8 +10,9 @@ import {
 } from '@/utils/magpieImport'
 import type { GroupPlatform } from '@/types'
 
-function paramsFromLink(link: string): URLSearchParams {
-  const [page, fragment = ''] = link.split('#')
+function paramsFromLink(link: string | null): URLSearchParams {
+  expect(link).not.toBeNull()
+  const [page, fragment = ''] = link!.split('#')
   expect(page).toBe(MAGPIE_IMPORT_URL)
   return new URLSearchParams(fragment)
 }
@@ -21,7 +22,8 @@ const baseInput = {
   siteName: 'Sub2API',
   keyId: 42,
   keyName: 'laptop',
-  apiKey: 'sk-test'
+  apiKey: 'sk-test',
+  allowMessagesDispatch: true
 }
 
 describe('magpieImport utils', () => {
@@ -34,8 +36,8 @@ describe('magpieImport utils', () => {
   it('keeps every parameter in the fragment and out of the query', () => {
     const link = buildMagpieImportLink({ ...baseInput, platform: 'anthropic' })
 
-    expect(link.startsWith(`${MAGPIE_IMPORT_URL}#`)).toBe(true)
-    expect(new URL(link).search).toBe('')
+    expect(link!.startsWith(`${MAGPIE_IMPORT_URL}#`)).toBe(true)
+    expect(new URL(link!).search).toBe('')
 
     const params = paramsFromLink(link)
     expect(params.get('name')).toBe('Sub2API-laptop')
@@ -52,12 +54,31 @@ describe('magpieImport utils', () => {
     expect(params.get('catalog')).toBe('anthropic')
   })
 
-  it('defaults to the Anthropic layout when the key has no group', () => {
-    const params = paramsFromLink(buildMagpieImportLink({ ...baseInput, platform: null }))
-
-    expect(params.get('anthropic')).toBe('https://api.example.com')
-    expect(params.get('catalog')).toBe('anthropic')
+  it.each([
+    { platform: undefined },
+    { platform: null },
+    { platform: 'typesafe' as const },
+    { platform: 'anthropic' as const, claudeCodeOnly: true },
+    { platform: 'openai' as const, claudeCodeOnly: true }
+  ])('does not import incompatible keys: %j', (options) => {
+    expect(buildMagpieImportLink({ ...baseInput, ...options })).toBeNull()
   })
+
+  it.each(['openai', 'composite'] as const)('honors Messages dispatch for %s groups', (platform) => {
+    for (const allowMessagesDispatch of [undefined, false, true]) {
+      const params = paramsFromLink(buildMagpieImportLink({ ...baseInput, platform, allowMessagesDispatch }))
+      expect(params.has('anthropic')).toBe(allowMessagesDispatch === true)
+      expect(params.get('chat')).toBe('https://api.example.com/v1')
+      expect(params.get('responses')).toBe('https://api.example.com/v1')
+    }
+  })
+
+  it.each(['grok', 'kimi', 'zhipu', 'deepseek', 'minimax', 'opencode_go'] as const)(
+    'retains native Messages for %s without the dispatch switch', (platform) => {
+      const params = paramsFromLink(buildMagpieImportLink({ ...baseInput, platform, allowMessagesDispatch: false }))
+      expect(params.get('anthropic')).toBe('https://api.example.com')
+    }
+  )
 
   it.each([
     'https://api.example.com',
@@ -73,7 +94,7 @@ describe('magpieImport utils', () => {
   })
 
   it('keeps a sub-path deployment prefix', () => {
-    const endpoints = resolveMagpieImportEndpoints('openai', 'https://api.example.com/sub2api/')
+    const endpoints = resolveMagpieImportEndpoints('openai', 'https://api.example.com/sub2api/', true)
 
     expect(endpoints.anthropic).toBe('https://api.example.com/sub2api')
     expect(endpoints.chat).toBe('https://api.example.com/sub2api/v1')

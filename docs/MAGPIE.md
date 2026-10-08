@@ -21,11 +21,13 @@ Anthropic 地址不带 `/v1`；OpenAI 地址带 `/v1`。可用模型列表由服
 
 Gemini 分组在此集成中使用 Chat Completions；不要将 `/v1/responses` 配置为其可用协议。需要 Responses 的客户端可由 Magpie 转换到已配置的协议。
 
-仅允许 Claude Code 的分组不适合普通 Magpie 接入：客户端限制仍然有效，应选择允许此类请求的分组。TypeSafe 的 System One 协议不在此接入范围内。
+未分组、仅允许 Claude Code 和 TypeSafe 分组的密钥不显示 Magpie 导入入口。客户端限制仍然有效，应选择允许此类请求的分组；TypeSafe 的 System One 协议不在此接入范围内。
+
+OpenAI 和合成分组仅在管理员启用 `allow_messages_dispatch` 时导出 Anthropic Messages。关闭时保留 Chat Completions 和 Responses，由 Magpie 为其他客户端转换请求。合成分组即使部分目标支持 Messages，也不应对所有模型声明该协议。
 
 Magpie 要求公网服务使用 HTTPS，仅本机和内网等官方允许的地址可以使用 HTTP。容器部署的 API Base URL 应填写 Magpie 所在电脑可以访问的服务地址。
 
-## 一键导入（待合并功能）
+## 一键导入
 
 [PR #7830](https://github.com/Wei-Shaw/sub2api/pull/7830) 提供 API 密钥列表的「导入到 Magpie」按钮。安装包含该功能的版本后，点击按钮，在 Magpie 中检查服务地址、密钥并确认添加。导入链接需要 Magpie 0.1.8 或更新版本。
 
@@ -50,9 +52,9 @@ Create a sub2api API key, assign it to a group, and add a custom provider in Mag
 
 Discover models from `/v1/models` (`/antigravity/v1/models` for Antigravity), select an available model, and connect your agents in Magpie. Magpie translates requests for other APIs; Gemini groups should not advertise Responses. Models, quota and permissions depend on the group and upstream accounts. Composite groups also require model routing configured by the administrator.
 
-Claude Code-only restrictions still apply; choose a group that permits Magpie requests. TypeSafe System One is outside this integration. Public endpoints must use HTTPS; only supported local endpoints may use HTTP. For container deployments, use an address reachable from the computer running Magpie.
+Unassigned, Claude Code-only and TypeSafe keys do not offer an import button. Choose a group that permits Magpie requests. TypeSafe System One is outside this integration. OpenAI and Composite groups only export Anthropic Messages when the administrator enables `allow_messages_dispatch`; otherwise Magpie can translate via Chat Completions or Responses. Public endpoints must use HTTPS; only supported local endpoints may use HTTP. For container deployments, use an address reachable from the computer running Magpie.
 
-### One-click import (pending)
+### One-click import
 
 [PR #7830](https://github.com/Wei-Shaw/sub2api/pull/7830) adds **Import to Magpie** on the API Keys page. Once running a version containing that change, click the button and confirm the endpoint and key in Magpie (0.1.8+). Models are discovered rather than hard-coded.
 

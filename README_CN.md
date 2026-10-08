@@ -191,7 +191,7 @@ Sub2API 是一个 AI API 网关平台，用于分发和管理 AI 产品订阅的
 
 ## Magpie 接入
 
-可通过现有网关接口接入 Magpie。[Magpie 接入指南](docs/MAGPIE.md) 包含端点配置、支持的协议、模型发现及待合并的一键导入功能。
+可通过现有网关接口接入 Magpie。[Magpie 接入指南](docs/MAGPIE.md) 包含端点配置、支持的协议、模型发现及一键导入功能。
 
 ## 生态项目
 

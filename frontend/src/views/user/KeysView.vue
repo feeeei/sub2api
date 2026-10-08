@@ -412,6 +412,7 @@
               </button>
               <!-- Import to Magpie Button -->
               <button
+                v-if="canImportToMagpie(row.group?.platform, row.group?.claude_code_only)"
                 @click="importToMagpie(row)"
                 :title="t('keys.importToMagpieTitle')"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-purple-900/20 dark:hover:text-purple-400"
@@ -1248,7 +1249,7 @@ import {
   buildCcSwitchImportDeeplink,
   type CcSwitchClientType
 } from '@/utils/ccswitchImport'
-import { buildMagpieImportLink } from '@/utils/magpieImport'
+import { buildMagpieImportLink, canImportToMagpie } from '@/utils/magpieImport'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -2085,6 +2086,8 @@ const importToMagpie = (row: ApiKey) => {
   const link = buildMagpieImportLink({
     baseUrl,
     platform: row.group?.platform,
+    claudeCodeOnly: row.group?.claude_code_only,
+    allowMessagesDispatch: row.group?.allow_messages_dispatch,
     siteName,
     keyId: row.id,
     keyName: row.name,
@@ -2092,6 +2095,8 @@ const importToMagpie = (row: ApiKey) => {
     website: window.location.origin,
     keysUrl: `${window.location.origin}${window.location.pathname}`
   })
+
+  if (!link) return
 
   // Magpie's web form keeps the key in the URL fragment (never sent to its server),
   // opens the desktop app, and offers the download when it is not installed yet.
